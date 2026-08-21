@@ -11,7 +11,6 @@ local LocalPlayer = Players.LocalPlayer
 local CONFIG_FOLDER = "IvyHub_Configs"
 local AUTOLOAD_FILE = CONFIG_FOLDER .. "/autoload.txt"
 
--- Safe File Storage Directory
 local function EnsureFolder()
     if makefolder and isfolder and not isfolder(CONFIG_FOLDER) then
         pcall(function() makefolder(CONFIG_FOLDER) end)
@@ -19,7 +18,6 @@ local function EnsureFolder()
 end
 EnsureFolder()
 
--- Safe GUI Parent Detection
 local function GetSafeParent()
     if gethui then
         local success, hui = pcall(gethui)
@@ -30,11 +28,7 @@ local function GetSafeParent()
     return LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- ================================================================================
--- MASTER CONFIGURATION TABLE
--- ================================================================================
 _G.HubConfig = _G.HubConfig or {
-    -- Qb AB Engine Configuration
     QBAim = {
         Enabled = false,
         TeamFilter = true,
@@ -49,7 +43,6 @@ _G.HubConfig = _G.HubConfig or {
         ToggleKeybind = Enum.KeyCode.P
     },
 
-    -- Physics & Out Of Bounds Safety
     NoOOB = { Enabled = false, Keybind = Enum.KeyCode.Unknown },
 
     uwuMagnets = { Enabled = false, Power = 55, Range = 25, Keybind = Enum.KeyCode.F },
@@ -57,10 +50,8 @@ _G.HubConfig = _G.HubConfig or {
     Sticky = { Enabled = false, Range = 10, Smoothness = 12, Strength = 12, Keybind = Enum.KeyCode.Unknown },
     JPV = { Enabled = false, Value = 1, MaxDist = 10, Keybind = Enum.KeyCode.Unknown },
     
-    -- Standalone Auto ST Configuration
     AutoST = { Enabled = true, DetectionRange = 45, Smoothness = 25, Keybind = Enum.KeyCode.V },
     
-    -- HeadPull Configuration (Mid-Air Only)
     HeadPull = { Enabled = false, Range = 12, Smoothness = 15, MaxStrength = 55, Keybind = Enum.KeyCode.Unknown },
     
     TackleReach = { Enabled = false, SizeX = 2.52, SizeY = 5.4, SizeZ = 1.41, Transparency = 0.7, Keybind = Enum.KeyCode.Unknown },
@@ -71,7 +62,6 @@ _G.HubConfig = _G.HubConfig or {
     
     AutoStick = { Enabled = false, ActivateDist = 1.9, LockInDist = 5, MaxStrength = 55, OffsetY = 2.8, BalanceRadius = 3.75, VertMin = -4, VertMax = 4, CorrSpeed = 0.55, Keybind = Enum.KeyCode.Unknown },
     
-    -- STICK BUMP SETTINGS
     StickBump = {
         Enabled = false,
         Range = 10,
@@ -90,7 +80,6 @@ _G.HubConfig = _G.HubConfig or {
     Misc = { Keybind = Enum.KeyCode.RightShift, Hider = false, HiderKeybind = Enum.KeyCode.Unknown }
 }
 
--- Config Serialization Engine
 local function SerializeConfig(cfg)
     local copy = {}
     for cat, data in pairs(cfg) do
@@ -121,12 +110,10 @@ local function DeserializeConfig(jsonStr)
     end
 end
 
--- Destroy Existing GUI Instance
 local targetParent = GetSafeParent()
 local oldGui = targetParent:FindFirstChild("IVY_HUB_INTERFACE")
 if oldGui then oldGui:Destroy() end
 
--- Helper Character Getters
 local function getChar()
     local char = LocalPlayer.Character
     if not char then return nil, nil, nil end
@@ -135,13 +122,11 @@ local function getChar()
     return char, hrp, hum
 end
 
--- Target Football Detector (Filters out unanchored / field logo / map parts)
 local function findFootballPart()
     local bestBall = nil
     local shortestDist = math.huge
     local char, hrp = getChar()
 
-    -- 1. Check direct Workspace children for unanchored thrown balls
     for _, obj in ipairs(Workspace:GetChildren()) do
         if obj:IsA("BasePart") then
             local name = obj.Name:lower()
@@ -159,7 +144,6 @@ local function findFootballPart()
         end
     end
 
-    -- 2. Fallback search excluding map, stadium, field, and logo parts
     if not bestBall then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("BasePart") and not obj.Anchored then
@@ -183,7 +167,6 @@ local function findFootballPart()
     return bestBall
 end
 
--- Dive Animation Detector
 local function isPlayerDiving(hum)
     if not hum then return false end
     local active = false
@@ -213,7 +196,6 @@ local function isPlayerDiving(hum)
     return active
 end
 
--- Impulse Force Helpers
 local function triggerFlingBoost()
     if not _G.HubConfig.Fling.Enabled then return end
     local char, hrp, hum = getChar()
@@ -247,9 +229,6 @@ local function triggerTapBumperImpulse()
     end
 end
 
--- ================================================================================
--- QB AIM MATH MODULE
--- ================================================================================
 local QBAimMathModule = {}
 do
     local ballGravity = 28
@@ -321,9 +300,6 @@ do
 end
 rawset(getfenv(), "QBAimMathModule", QBAimMathModule)
 
--- ================================================================================
--- HIDER LOGIC ENGINE
--- ================================================================================
 local hiderConnection = nil
 local function runHiderLogic()
     local hui = gethui and gethui() or game:GetService("CoreGui")
@@ -343,9 +319,6 @@ local function runHiderLogic()
     end
 end
 
--- ================================================================================
--- DYNAMIC CROZO HITBOX & HEAD TARGET POSITION ENGINE
--- ================================================================================
 local function getStickyTargetPos(maxDist)
     local char, hrp = getChar()
     if not hrp then return nil end
@@ -372,13 +345,6 @@ local function getStickyTargetPos(maxDist)
     return bestPos
 end
 
--- ================================================================================
--- BACKEND MODULE LOGIC LOOPS
--- ================================================================================
-
-----------------------------------------------------------------------------------
--- 1. JUMP VECTOR (JPV) MECHANIC (TOGGLE MODE)
-----------------------------------------------------------------------------------
 local pullActive = false
 local pullStart = 0
 local pullDuration = 0.50
@@ -454,9 +420,6 @@ end
 
 RunService.Heartbeat:Connect(applyJumpVector)
 
-----------------------------------------------------------------------------------
--- 2. STICKY HEAD MECHANIC (HOLD KEYBIND)
-----------------------------------------------------------------------------------
 local stickyHeld = false
 
 UserInputService.InputBegan:Connect(function(inp, gpe)
@@ -484,9 +447,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 3. AUTO ST CORE ENGINE
-----------------------------------------------------------------------------------
 local GRAVITY_VEC = Vector3.new(0, -28, 0)
 local autoSTHeld = false
 local autoSTTgl = nil
@@ -566,9 +526,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 4. HEADPULL ENGINE (MID-AIR EXCLUSIVE MECHANIC)
-----------------------------------------------------------------------------------
 local headPullHeld = false
 local headPullTgl = nil
 
@@ -613,9 +570,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 5. STANDALONE AUTO STICK ENGINE
-----------------------------------------------------------------------------------
 RunService.Heartbeat:Connect(function()
     if not _G.HubConfig.AutoStick.Enabled then return end
     local char, hrp, hum = getChar()
@@ -638,9 +592,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 6. STICK BUMP ENGINE
-----------------------------------------------------------------------------------
 local stickBumpHeld = false
 local bumpOnCooldown = false
 local cdRemaining = 0
@@ -737,9 +688,6 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
-----------------------------------------------------------------------------------
--- 7. AUTO ROCKET ENGINE
-----------------------------------------------------------------------------------
 local currentDiveTime = 0
 local lastIsDiving = false
 
@@ -773,9 +721,6 @@ RunService.Heartbeat:Connect(function(dt)
     lastIsDiving = diving
 end)
 
-----------------------------------------------------------------------------------
--- 8. UWU MAGNETS & BALL TP (BTP)
-----------------------------------------------------------------------------------
 RunService.Heartbeat:Connect(function()
     local char, hrp = getChar()
     if not char or not hrp then return end
@@ -806,9 +751,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 9. TACKLE REACH ENGINE
-----------------------------------------------------------------------------------
 local reachWatchers = setmetatable({}, {__mode = "k"})
 local reachOriginalParts = {
     Transparency = setmetatable({}, {__mode = "k"}),
@@ -945,9 +887,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 10. QB AIM TARGETING & EXECUTION ENGINE LOOPS
-----------------------------------------------------------------------------------
 local qbTargetPlayer = nil
 
 local function getBestQBTarget()
@@ -1011,9 +950,6 @@ local function executeQBThrow()
     end
 end
 
-----------------------------------------------------------------------------------
--- 11. NO OOB ENGINE
-----------------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(1) do
         if _G.HubConfig.NoOOB and _G.HubConfig.NoOOB.Enabled then
@@ -1029,9 +965,6 @@ task.spawn(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 12. CROZO HITBOX ENGINE
-----------------------------------------------------------------------------------
 local originalHitboxProperties = {}
 
 RunService.RenderStepped:Connect(function()
@@ -1074,9 +1007,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 13. VISUALS & ENVIRONMENT
-----------------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(1) do
         if _G.HubConfig.RedSky.Enabled then
@@ -1098,9 +1028,6 @@ task.spawn(function()
     end
 end)
 
-----------------------------------------------------------------------------------
--- 14. MOVEMENT OVERRIDES
-----------------------------------------------------------------------------------
 local lastJumpTime = 0
 UserInputService.JumpRequest:Connect(function()
     if not _G.HubConfig.JP.Enabled then return end
@@ -1125,10 +1052,6 @@ RunService.Heartbeat:Connect(function()
         Workspace.Gravity = tonumber(_G.HubConfig.Gravity.GravityVal) or 178.4
     end
 end)
-
--- ================================================================================
--- IVY HUB COMPACT ORGANIC GUI FRAMEWORK
--- ================================================================================
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "IVY_HUB_INTERFACE"
@@ -1163,7 +1086,6 @@ MainFrame.Parent = ScreenGui
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
--- Header Bar
 local Header = Instance.new("Frame", MainFrame)
 Header.Size = UDim2.new(1, 0, 0, 30)
 Header.BackgroundColor3 = THEME.Header
@@ -1181,7 +1103,6 @@ Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
 
--- Sidebar
 local Sidebar = Instance.new("Frame", MainFrame)
 Sidebar.Size = UDim2.new(0, 105, 1, -34)
 Sidebar.Position = UDim2.new(0, 0, 0, 34)
@@ -1206,7 +1127,6 @@ ContentArea.BackgroundTransparency = 1
 
 local CyberGUI = { Tabs = {}, KeybindRegistry = {}, RefreshCallbacks = {} }
 
--- Keybind Registration Engine
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     local code = input.KeyCode
@@ -1508,11 +1428,6 @@ function CyberGUI:CreateTab(tabName)
     return TabObj
 end
 
--- ================================================================================
--- TAB CONTROLS REGISTRATION
--- ================================================================================
-
--- 1. Qb AB Tab
 local QbABTab = CyberGUI:CreateTab("Qb AB")
 local qbEnableTgl = QbABTab:AddToggle("Qb AB Enabled", _G.HubConfig.QBAim, "Enabled")
 QbABTab:AddToggle("Team Filter", _G.HubConfig.QBAim, "TeamFilter")
@@ -1527,7 +1442,6 @@ QbABTab:AddKeybinder("Throw Ball", _G.HubConfig.QBAim, "ThrowKeybind", nil, fals
 QbABTab:AddKeybinder("Toggle Qb AB", _G.HubConfig.QBAim, "ToggleKeybind", qbEnableTgl)
 QbABTab:AddDivider()
 
--- 2. Auto ST Tab
 local AutoSTTab = CyberGUI:CreateTab("Auto ST")
 autoSTTgl = AutoSTTab:AddToggle("Auto ST Active", _G.HubConfig.AutoST, "Enabled")
 AutoSTTab:AddValueChanger("Detection Range", _G.HubConfig.AutoST, "DetectionRange")
@@ -1535,7 +1449,6 @@ AutoSTTab:AddValueChanger("Smoothness", _G.HubConfig.AutoST, "Smoothness")
 AutoSTTab:AddKeybinder("Auto ST", _G.HubConfig.AutoST, "Keybind", autoSTTgl, true)
 AutoSTTab:AddDivider()
 
--- 3. HeadPull Tab (Mid-Air Only)
 local HeadPullTab = CyberGUI:CreateTab("HeadPull")
 headPullTgl = HeadPullTab:AddToggle("HeadPull Active", _G.HubConfig.HeadPull, "Enabled")
 HeadPullTab:AddValueChanger("Range", _G.HubConfig.HeadPull, "Range")
@@ -1544,7 +1457,6 @@ HeadPullTab:AddValueChanger("Max Strength", _G.HubConfig.HeadPull, "MaxStrength"
 HeadPullTab:AddKeybinder("HeadPull", _G.HubConfig.HeadPull, "Keybind", headPullTgl, true)
 HeadPullTab:AddDivider()
 
--- 4. Auto Stick Tab
 local AutoStickTab = CyberGUI:CreateTab("Auto Stick")
 local autoStickTgl = AutoStickTab:AddToggle("Auto Stick", _G.HubConfig.AutoStick, "Enabled")
 AutoStickTab:AddValueChanger("Activate Dist", _G.HubConfig.AutoStick, "ActivateDist")
@@ -1558,7 +1470,6 @@ AutoStickTab:AddValueChanger("Correction Speed", _G.HubConfig.AutoStick, "CorrSp
 AutoStickTab:AddKeybinder("Auto Stick", _G.HubConfig.AutoStick, "Keybind", autoStickTgl)
 AutoStickTab:AddDivider()
 
--- 5. Stick Bump Tab
 local StickBumpTab = CyberGUI:CreateTab("Stick Bump")
 local stickBumpTgl = StickBumpTab:AddToggle("Stick Bump", _G.HubConfig.StickBump, "Enabled")
 StickBumpTab:AddValueChanger("Range", _G.HubConfig.StickBump, "Range")
@@ -1568,14 +1479,12 @@ StickBumpTab:AddValueChanger("Cooldown", _G.HubConfig.StickBump, "Cooldown")
 StickBumpTab:AddKeybinder("Stick Bump", _G.HubConfig.StickBump, "Keybind", stickBumpTgl, true)
 StickBumpTab:AddDivider()
 
--- 6. Tap Bumper Tab
 local TapBumperTab = CyberGUI:CreateTab("Tap Bumper")
 local tapBumperTgl = TapBumperTab:AddToggle("Tap Bumper", _G.HubConfig.TapBumper, "Enabled")
 TapBumperTab:AddValueChanger("Launch Force", _G.HubConfig.TapBumper, "Force")
 TapBumperTab:AddKeybinder("Tap Bumper", _G.HubConfig.TapBumper, "Keybind", nil, false, true, triggerTapBumperImpulse)
 TapBumperTab:AddDivider()
 
--- 7. Auto Rocket Tab
 local AutoRocketTab = CyberGUI:CreateTab("Auto Rocket")
 local autoRocketTgl = AutoRocketTab:AddToggle("Auto Rocket", _G.HubConfig.AutoRocket, "Enabled")
 AutoRocketTab:AddToggle("Head Only Velocity", _G.HubConfig.AutoRocket, "HeadOnly")
@@ -1583,14 +1492,12 @@ AutoRocketTab:AddValueChanger("Dive Power", _G.HubConfig.AutoRocket, "Power")
 AutoRocketTab:AddKeybinder("Auto Rocket", _G.HubConfig.AutoRocket, "Keybind", autoRocketTgl)
 AutoRocketTab:AddDivider()
 
--- 8. Fling Tab
 local FlingTab = CyberGUI:CreateTab("Fling")
 local flingTgl = FlingTab:AddToggle("Fling Active", _G.HubConfig.Fling, "Enabled")
 FlingTab:AddValueChanger("Fling Power", _G.HubConfig.Fling, "Power")
 FlingTab:AddKeybinder("Fling Action", _G.HubConfig.Fling, "Keybind", flingTgl, false, true, triggerFlingBoost)
 FlingTab:AddDivider()
 
--- 9. Sticky Tab (Hold Keybind)
 local StickyTab = CyberGUI:CreateTab("Sticky")
 local stickyTgl = StickyTab:AddToggle("Sticky Head", _G.HubConfig.Sticky, "Enabled")
 StickyTab:AddValueChanger("Detection Range", _G.HubConfig.Sticky, "Range")
@@ -1599,7 +1506,6 @@ StickyTab:AddValueChanger("Strength", _G.HubConfig.Sticky, "Strength")
 StickyTab:AddKeybinder("Sticky Head", _G.HubConfig.Sticky, "Keybind", stickyTgl, true)
 StickyTab:AddDivider()
 
--- 10. BTP & Magnet Tab
 local MagnetTab = CyberGUI:CreateTab("BTP & Magnet")
 local magTgl = MagnetTab:AddToggle("uwu magnets", _G.HubConfig.uwuMagnets, "Enabled")
 MagnetTab:AddValueChanger("Magnet Power", _G.HubConfig.uwuMagnets, "Power")
@@ -1613,7 +1519,6 @@ MagnetTab:AddValueChanger("Catch Arm", _G.HubConfig.BTP, "CatchArm")
 MagnetTab:AddKeybinder("Ball TP", _G.HubConfig.BTP, "Keybind", btpTgl)
 MagnetTab:AddDivider()
 
--- 11. JPV Tab (TOGGLE KEYBIND MODE)
 local JPVTab = CyberGUI:CreateTab("JPV")
 local jpvTgl = JPVTab:AddToggle("JPV Assist", _G.HubConfig.JPV, "Enabled")
 JPVTab:AddValueChanger("JPV Strength (0-2)", _G.HubConfig.JPV, "Value", 0.01, 2)
@@ -1621,7 +1526,6 @@ JPVTab:AddValueChanger("Max Distance", _G.HubConfig.JPV, "MaxDist")
 JPVTab:AddKeybinder("JPV", _G.HubConfig.JPV, "Keybind", jpvTgl, false)
 JPVTab:AddDivider()
 
--- 12. Tackle Reach Tab
 local ReachTab = CyberGUI:CreateTab("Tackle Reach")
 local reachTgl = ReachTab:AddToggle("Tackle Reach", _G.HubConfig.TackleReach, "Enabled")
 ReachTab:AddValueChanger("Reach Size X", _G.HubConfig.TackleReach, "SizeX")
@@ -1631,7 +1535,6 @@ ReachTab:AddValueChanger("Transparency", _G.HubConfig.TackleReach, "Transparency
 ReachTab:AddKeybinder("Tackle Reach", _G.HubConfig.TackleReach, "Keybind", reachTgl)
 ReachTab:AddDivider()
 
--- 13. Movement & Physics Tab
 local MoveTab = CyberGUI:CreateTab("Movement")
 local noOobTgl = MoveTab:AddToggle("NO OOB", _G.HubConfig.NoOOB, "Enabled")
 MoveTab:AddKeybinder("NO OOB", _G.HubConfig.NoOOB, "Keybind", noOobTgl)
@@ -1653,7 +1556,6 @@ MoveTab:AddValueChanger("Cooldown", _G.HubConfig.JP, "Cooldown")
 MoveTab:AddKeybinder("JP", _G.HubConfig.JP, "Keybind", jumpTgl)
 MoveTab:AddDivider()
 
--- 14. Visuals Tab
 local VisualsTab = CyberGUI:CreateTab("Visuals")
 local redSkyTgl = VisualsTab:AddToggle("Red Skybox", _G.HubConfig.RedSky, "Enabled")
 VisualsTab:AddValueChanger("Sky Brightness", _G.HubConfig.RedSky, "Brightness")
@@ -1664,7 +1566,6 @@ local potatoTgl = VisualsTab:AddToggle("potato graphics", _G.HubConfig.PotatoGra
 VisualsTab:AddKeybinder("potato graphics", _G.HubConfig.PotatoGraphics, "Keybind", potatoTgl)
 VisualsTab:AddDivider()
 
--- 15. Hitbox Expander Tab
 local HitboxTab = CyberGUI:CreateTab("Hitbox")
 local headTgl = HitboxTab:AddToggle("Hitbox Expander", _G.HubConfig.HeadHitbox, "Enabled")
 HitboxTab:AddValueChanger("Hitbox Size", _G.HubConfig.HeadHitbox, "HeadSize")
@@ -1672,7 +1573,6 @@ HitboxTab:AddValueChanger("Transparency", _G.HubConfig.HeadHitbox, "Transparency
 HitboxTab:AddKeybinder("Hitbox Expander", _G.HubConfig.HeadHitbox, "Keybind", headTgl)
 HitboxTab:AddDivider()
 
--- 16. Misc Tab & Config System
 local MiscTab = CyberGUI:CreateTab("Misc")
 MiscTab:AddKeybinder("Gui Toggle", _G.HubConfig.Misc, "Keybind", nil, false, true, function() MainFrame.Visible = not MainFrame.Visible end)
 MiscTab:AddDivider()
@@ -1683,9 +1583,6 @@ end)
 MiscTab:AddKeybinder("Hider", _G.HubConfig.Misc, "HiderKeybind", hiderTgl)
 MiscTab:AddDivider()
 
-----------------------------------------------------------------------------------
--- ADVANCED CONFIG SYSTEM UI
-----------------------------------------------------------------------------------
 local currentConfigName = "default"
 
 local function GetSavedConfigs()
@@ -1712,7 +1609,6 @@ local function GetCurrentAutoload()
     return "None"
 end
 
--- Config Name Input Card
 local NameCard = Instance.new("Frame", MiscTab.Container)
 NameCard.Size = UDim2.new(0.97, 0, 0, 25)
 NameCard.BackgroundColor3 = THEME.Card
@@ -1742,7 +1638,6 @@ Instance.new("UICorner", ConfigInputBox).CornerRadius = UDim.new(0, 3)
 
 ConfigInputBox:GetPropertyChangedSignal("Text"):Connect(function() currentConfigName = ConfigInputBox.Text end)
 
--- Dropdown List Card
 local DropCard = Instance.new("Frame", MiscTab.Container)
 DropCard.Size = UDim2.new(0.97, 0, 0, 25)
 DropCard.BackgroundColor3 = THEME.Card
@@ -1827,7 +1722,6 @@ end)
 
 RefreshBtn.MouseButton1Click:Connect(PopulateDropdown)
 
--- Status / Autoload Indicator
 local StatusCard = Instance.new("Frame", MiscTab.Container)
 StatusCard.Size = UDim2.new(0.97, 0, 0, 18)
 StatusCard.BackgroundColor3 = THEME.Card
@@ -1848,7 +1742,6 @@ local function UpdateAutoloadStatus()
     StatusLabel.Text = "Autoloading: " .. GetCurrentAutoload()
 end
 
--- Config Buttons Helper
 local function CreateActionButton(btnText, btnColor, callback)
     local Card = Instance.new("Frame", MiscTab.Container)
     Card.Size = UDim2.new(0.97, 0, 0, 22)
@@ -1868,7 +1761,6 @@ local function CreateActionButton(btnText, btnColor, callback)
     ActionBtn.MouseButton1Click:Connect(callback)
 end
 
--- Save Config
 CreateActionButton("Save Config", Color3.fromRGB(35, 110, 65), function()
     if writefile then
         local name = currentConfigName ~= "" and currentConfigName or "default"
@@ -1877,7 +1769,6 @@ CreateActionButton("Save Config", Color3.fromRGB(35, 110, 65), function()
     end
 end)
 
--- Load Config
 CreateActionButton("Load Config", Color3.fromRGB(40, 90, 150), function()
     if readfile and isfile then
         local name = currentConfigName ~= "" and currentConfigName or "default"
@@ -1889,7 +1780,6 @@ CreateActionButton("Load Config", Color3.fromRGB(40, 90, 150), function()
     end
 end)
 
--- Delete Config
 CreateActionButton("Delete Config", Color3.fromRGB(150, 45, 50), function()
     if delfile and isfile then
         local name = currentConfigName ~= "" and currentConfigName or "default"
@@ -1901,7 +1791,6 @@ CreateActionButton("Delete Config", Color3.fromRGB(150, 45, 50), function()
     end
 end)
 
--- Set as Autoload
 CreateActionButton("Set as Autoload", Color3.fromRGB(110, 85, 30), function()
     if writefile then
         local name = currentConfigName ~= "" and currentConfigName or "default"
@@ -1910,7 +1799,6 @@ CreateActionButton("Set as Autoload", Color3.fromRGB(110, 85, 30), function()
     end
 end)
 
--- Clear Autoload
 CreateActionButton("Clear Autoload", Color3.fromRGB(70, 70, 80), function()
     if delfile and isfile and isfile(AUTOLOAD_FILE) then
         delfile(AUTOLOAD_FILE)
